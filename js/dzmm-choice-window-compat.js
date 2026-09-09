@@ -150,15 +150,10 @@
         }
     };
 
-    // Some embedded browsers briefly report the popup target as unavailable.
-    // Re-check while the extended message is waiting for its choice input.
-    var originalMessageUpdate = Window_MessageEx.prototype.update;
-    Window_MessageEx.prototype.update = function() {
-        originalMessageUpdate.apply(this, arguments);
-        if (this._gameMessage && this._gameMessage.isChoice() && this._choiceWindow &&
-                (!this._choiceWindow.active || !this._choiceWindow.visible ||
-                 this._choiceWindow.openness <= 0)) {
-            recoverChoiceWindow(this._choiceWindow);
-        }
-    };
+    // Do not recover from Window_MessageEx.update(). Game_Message receives the
+    // prompt text and its choices at the same time, while Window_Message still
+    // needs several frames to draw the text. Activating the choice here makes
+    // Window_Message.updateInput() wait on the sub-window and permanently
+    // prevents that prompt from being drawn. Recovery is intentionally limited
+    // to Window_ChoiceListEx.start(), which is the engine's real input phase.
 })();

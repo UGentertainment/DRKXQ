@@ -111,4 +111,18 @@ extendedMessageWindow._originalTarget = null;
 extendedMessageWindow._targetCharacterId = 0;
 assert.strictEqual(extendedMessageWindow.getPopupTargetCharacter(), null);
 
+// Merely having pending choices must not activate their window while the
+// parent message is still drawing its prompt.
+const pendingChoice = new Window_ChoiceListEx();
+Object.assign(pendingChoice, {
+    _gameMessage: gameMessage,
+    active: false,
+    visible: false,
+    openness: 0
+});
+extendedMessageWindow._choiceWindow = pendingChoice;
+extendedMessageWindow.update();
+assert.strictEqual(pendingChoice.active, false);
+assert.strictEqual(pendingChoice.openness, 0);
+
 console.log('extended choice positioning tests passed');
