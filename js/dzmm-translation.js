@@ -52,6 +52,10 @@
     Object.keys(supplementalTranslations).forEach(function(source) {
         dictionary[source] = supplementalTranslations[source];
     });
+    var visibleSupplement = window.DRKXQ_VISIBLE_TRANSLATIONS || Object.create(null);
+    Object.keys(visibleSupplement).forEach(function(source) {
+        dictionary[source] = visibleSupplement[source];
+    });
     var normalizedDictionary = Object.create(null);
     var phraseIndex = Object.create(null);
 

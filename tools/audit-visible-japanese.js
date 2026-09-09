@@ -6,6 +6,12 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const mapText = fs.readFileSync(path.join(root, 'js', 'dzmm-translation-map.js'), 'utf8');
 const dictionary = JSON.parse(mapText.replace(/^window\.DRKXQ_TRANSLATIONS=/, '').replace(/;\s*$/, ''));
+const supplementFile = path.join(root, 'js', 'dzmm-visible-translation-supplement.js');
+let visibleSupplement = {};
+if (fs.existsSync(supplementFile)) {
+    visibleSupplement = JSON.parse(fs.readFileSync(supplementFile, 'utf8')
+        .replace(/^window\.DRKXQ_VISIBLE_TRANSLATIONS=/, '').replace(/;\s*$/, ''));
+}
 Object.assign(dictionary, {
     '\\c[14]メンテナンス\\c[0]へ': '\\c[14]维护\\c[0]',
     '\\c[14]深夜のジカン\\c[0]へ': '前往\\c[14]深夜时段\\c[0]',
@@ -24,6 +30,7 @@ Object.assign(dictionary, {
     '\\c[14]その日に起こした行動が絵日記のフラグ\\c[0]となっており、\n起こしていないイベントは描写することはできません。\\!\n沢山のイベントを探してみましょう！': '\\c[14]当天做过的行动会成为绘制日记的条件\\c[0]，\n没有触发过的事件无法画进日记。\\!\n请尽量寻找更多事件吧！',
     '以上でチュートリアルは終了です。\\!\nそれでは良いあまえんぼライフを(⌒▽⌒)丿': '教程到这里就结束了。\\!\n祝你享受愉快的撒娇生活！(⌒▽⌒)丿'
 });
+Object.assign(dictionary, visibleSupplement);
 const owns = Object.prototype.hasOwnProperty;
 const remaining = new Map();
 const phraseIndex = Object.create(null);
