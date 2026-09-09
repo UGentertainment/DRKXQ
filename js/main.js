@@ -21,7 +21,7 @@ PluginManager.setup($plugins);
     function loadPatchScript(name) {
         return new Promise(function(resolve, reject) {
             var script = document.createElement('script');
-            script.src = 'js/' + name + '?v=20260908-3';
+            script.src = 'js/' + name + '?v=20260909-1';
             script.onload = resolve;
             script.onerror = function() {
                 reject(new Error('Failed to load browser patch: ' + name));
