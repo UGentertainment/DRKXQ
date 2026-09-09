@@ -29,12 +29,16 @@ Window_ChoiceListEx.prototype.open = function() { this.openness = 255; };
 Window_ChoiceListEx.prototype.activate = function() { this.active = true; };
 
 function Window_MessageEx() {}
+Window_MessageEx.prototype.getPopupTargetCharacter = function() {
+    return this._originalTarget || null;
+};
 Window_MessageEx.prototype.update = function() {
     // The compatibility layer must leave an active, placed popup alone.
 };
 
 global.Window_ChoiceListEx = Window_ChoiceListEx;
 global.Window_MessageEx = Window_MessageEx;
+global.$gamePlayer = { id: 'player' };
 
 const gameMessage = {
     choices() { return ['Yes', 'No']; },
@@ -74,10 +78,22 @@ assert.strictEqual(choiceWindow.x, 32);
 assert.strictEqual(choiceWindow.y, 120);
 
 const extendedMessageWindow = new Window_MessageEx();
+extendedMessageWindow._windowId = 1;
+extendedMessageWindow._targetCharacterId = 6;
 extendedMessageWindow._gameMessage = gameMessage;
 extendedMessageWindow._choiceWindow = choiceWindow;
 extendedMessageWindow.update();
 assert.strictEqual(choiceWindow.x, 32);
 assert.strictEqual(choiceWindow.y, 120);
+assert.strictEqual(extendedMessageWindow.getPopupTargetCharacter(), global.$gamePlayer);
+assert.strictEqual(global.__DRKXQ_POPUP_FALLBACK__.requestedCharacterId, 6);
+
+const existingAnchor = { id: 'map-event-6' };
+extendedMessageWindow._originalTarget = existingAnchor;
+assert.strictEqual(extendedMessageWindow.getPopupTargetCharacter(), existingAnchor);
+
+extendedMessageWindow._originalTarget = null;
+extendedMessageWindow._targetCharacterId = 0;
+assert.strictEqual(extendedMessageWindow.getPopupTargetCharacter(), null);
 
 console.log('extended choice positioning tests passed');

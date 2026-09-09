@@ -4,6 +4,47 @@
 
     var dictionary = window.DRKXQ_TRANSLATIONS || Object.create(null);
     var owns = Object.prototype.hasOwnProperty;
+    var supplementalTranslations = {
+        '\\c[14]メンテナンス\\c[0]へ': '\\c[14]维护\\c[0]',
+        '\\c[14]深夜のジカン\\c[0]へ': '前往\\c[14]深夜时段\\c[0]',
+        '\\c[14]該当データの保存': '\\c[14]保存对应数据',
+        '(誰を呼び出そうかな)': '（叫谁过来呢？）',
+        '◆レアリティ：': '◆稀有度：',
+        'が釣れた！やったね！': '钓到了！太好了！',
+        '解散しようかな？': '要解散吗？',
+        '帰ろうかな？': '要回去吗？',
+        '◆ミニゲームを': '◆要跳过小游戏吗？',
+        'スキップしますか？': '要跳过吗？',
+        'スキップ報酬：お小遣い+500': '跳过奖励：零花钱+500',
+        'ありがとう、': '谢谢，',
+        'ありがとう': '谢谢',
+        '最新ドローンが': '最新型无人机',
+        '飛んでる！': '正在飞！',
+        '……\\.ん？': '……\\.嗯？',
+        'わっはっはっは！': '哇哈哈哈哈！',
+        'どうしよう…？': '该怎么办呢……？'
+    };
+    Object.keys(supplementalTranslations).forEach(function(source) {
+        dictionary[source] = supplementalTranslations[source];
+    });
+    var normalizedDictionary = Object.create(null);
+
+    function normalizeLookupKey(value) {
+        return String(value).replace(/[\s\u3000。、，,！!？?…‥・「」『』【】（）()～〜―—\-]/g, '');
+    }
+
+    Object.keys(dictionary).forEach(function(source) {
+        var target = dictionary[source];
+        if (typeof target !== 'string' || target === source || /\\/.test(source) ||
+                /[\u3040-\u30ff]/.test(target)) return;
+        var normalized = normalizeLookupKey(source);
+        if (normalized.length < 3) return;
+        if (!owns.call(normalizedDictionary, normalized)) {
+            normalizedDictionary[normalized] = target;
+        } else if (normalizedDictionary[normalized] !== target) {
+            normalizedDictionary[normalized] = null;
+        }
+    });
 
     function sanitizeAdultLanguage(value) {
         if (typeof value !== 'string') return value;
@@ -58,15 +99,29 @@
         if (typeof value !== 'string') return value;
         var translated = owns.call(dictionary, value) && typeof dictionary[value] === 'string' ?
             dictionary[value] : value;
+        if (translated === value && !/\\/.test(value)) {
+            var normalized = normalizeLookupKey(value);
+            if (normalized.length >= 3 && typeof normalizedDictionary[normalized] === 'string') {
+                translated = normalizedDictionary[normalized];
+            }
+        }
         return sanitizeAdultLanguage(translated);
     }
 
     function translateLines(value) {
         if (typeof value !== 'string') return value;
         if (owns.call(dictionary, value) && typeof dictionary[value] === 'string') {
-            return dictionary[value];
+            return sanitizeAdultLanguage(dictionary[value]);
         }
         return value.split('\n').map(translateRmmvLine).join('\n');
+    }
+
+    function translateTextPiece(value) {
+        var whitespace = value.match(/^([ \u3000]*)(.*?)([ \u3000]*)$/);
+        if (!whitespace) return translateExact(value);
+        var translated = translateExact(whitespace[2]);
+        return translated !== whitespace[2] ?
+            whitespace[1] + translated + whitespace[3] : value;
     }
 
     function translateRmmvLine(value) {
@@ -93,7 +148,29 @@
         }
 
         var translated = translateExact(clean);
-        return translated !== clean ? leading + translated + trailing : value;
+        if (translated !== clean) return leading + translated + trailing;
+
+        // MTool stores many phrases without RPG Maker control codes, while the
+        // game inserts color/name/wait codes in the middle of a displayed line.
+        // Translate the visible pieces independently and preserve every code in
+        // its original position.
+        var controlPattern = /(\\(?:[A-Za-z]+(?:\[[^\]]*\])?|[.>|<!^{}]))/g;
+        var pieces = clean.split(controlPattern);
+        if (pieces.length > 1) {
+            var changed = false;
+            pieces = pieces.map(function(piece) {
+                if (!piece || controlPattern.test(piece)) {
+                    controlPattern.lastIndex = 0;
+                    return piece;
+                }
+                controlPattern.lastIndex = 0;
+                var pieceTranslation = translateTextPiece(piece);
+                if (pieceTranslation !== piece) changed = true;
+                return pieceTranslation;
+            });
+            if (changed) return leading + pieces.join('') + trailing;
+        }
+        return value;
     }
 
     var originalConvert = Window_Base.prototype.convertEscapeCharacters;

@@ -14,6 +14,28 @@
         return;
     }
 
+    // Winter Memories uses invisible map events as anchors for its prompt
+    // balloons (for example: MWP_VALID 6 1 1).  Some maps do not contain the
+    // requested anchor, so MessageWindowPopup reports that the message is not
+    // a popup at all.  The prompt then disappears and its choice sub-window
+    // falls back to the default top-left placement.  Keep the normal anchor
+    // whenever it exists, and use the player only for a configured-but-missing
+    // target so the prompt and choice remain one popup unit.
+    var originalPopupTarget = Window_MessageEx.prototype.getPopupTargetCharacter;
+    Window_MessageEx.prototype.getPopupTargetCharacter = function() {
+        var target = originalPopupTarget.apply(this, arguments);
+        var configuredId = Number(this._targetCharacterId);
+        if (!target && isFinite(configuredId) && configuredId !== 0 &&
+                typeof $gamePlayer !== 'undefined' && $gamePlayer) {
+            window.__DRKXQ_POPUP_FALLBACK__ = {
+                windowId: this._windowId,
+                requestedCharacterId: configuredId
+            };
+            return $gamePlayer;
+        }
+        return target;
+    };
+
     var originalChoiceStart = Window_ChoiceListEx.prototype.start;
 
     function report(stage, error, choiceWindow) {
