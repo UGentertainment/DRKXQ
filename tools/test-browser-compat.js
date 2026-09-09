@@ -10,6 +10,8 @@ global.Input = { _pollGamepads() {} };
 global.Bitmap = function Bitmap() {};
 Bitmap.prototype.getPixel = function() { return '#000000'; };
 Bitmap.prototype.getAlphaPixel = function() { return 0; };
+let originalBltCalls = 0;
+Bitmap.prototype.blt = function() { originalBltCalls++; };
 
 const calls = [];
 function GLTexture() {
@@ -36,6 +38,27 @@ global.PIXI = { glCore: { GLTexture } };
 
 const compatPath = path.join(__dirname, '..', 'js', 'dzmm-browser-compat.js');
 vm.runInThisContext(fs.readFileSync(compatPath, 'utf8'), { filename: compatPath });
+
+const destination = new Bitmap();
+const taintedSource = {
+    _canvas: { width: 10, height: 10 },
+    _context: {
+        getImageData() {
+            const error = new Error('The canvas has been tainted by cross-origin data.');
+            error.name = 'SecurityError';
+            throw error;
+        }
+    }
+};
+destination.blt(taintedSource);
+assert.strictEqual(originalBltCalls, 0, 'tainted source must not spread to another bitmap');
+
+const cleanSource = {
+    _canvas: { width: 10, height: 10 },
+    _context: { getImageData() { return { data: new Uint8ClampedArray(4) }; } }
+};
+destination.blt(cleanSource);
+assert.strictEqual(originalBltCalls, 1);
 
 const texture = new GLTexture();
 const source = { width: 320, height: 180 };

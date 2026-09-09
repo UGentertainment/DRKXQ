@@ -29,6 +29,49 @@
     };
 
     /*
+     * Do not let one origin-unsafe picture taint a destination Bitmap. A
+     * tainted message contents canvas cannot be uploaded by WebGL, which
+     * would otherwise make the complete popup (including its text) vanish.
+     */
+    var originalBlt = Bitmap.prototype.blt;
+
+    function hasExternalImage(bitmap) {
+        var image = bitmap && bitmap._image;
+        var source = image && (image.currentSrc || image.src);
+        if (!source || !window.location || window.location.protocol === 'file:') return false;
+        try {
+            var url = new URL(source, window.location.href);
+            return url.protocol !== 'data:' && url.protocol !== 'blob:' &&
+                url.origin !== window.location.origin;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function hasTaintedCanvas(bitmap) {
+        if (!bitmap || !bitmap._canvas || !bitmap._context) return false;
+        if (bitmap._drkxqTaintedCanvas) return true;
+        if (!bitmap._canvas.width || !bitmap._canvas.height) return false;
+        try {
+            bitmap._context.getImageData(0, 0, 1, 1);
+            return false;
+        } catch (error) {
+            var message = String(error && (error.message || error));
+            if (error && (error.name === 'SecurityError' ||
+                    /tainted canvas|cross-origin/i.test(message))) {
+                bitmap._drkxqTaintedCanvas = true;
+                return true;
+            }
+            throw error;
+        }
+    }
+
+    Bitmap.prototype.blt = function(source) {
+        if (hasExternalImage(source) || hasTaintedCanvas(source)) return;
+        return originalBlt.apply(this, arguments);
+    };
+
+    /*
      * A canvas becomes permanently tainted after a cross-origin image is drawn
      * onto it. PIXI then throws while uploading that canvas to WebGL. Keep the
      * texture's dimensions but replace only the blocked pixels with a clean,

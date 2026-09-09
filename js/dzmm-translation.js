@@ -101,11 +101,6 @@
         return originalConvert.call(this, translateLines(text));
     };
 
-    var originalAdd = Game_Message.prototype.add;
-    Game_Message.prototype.add = function(text) {
-        return originalAdd.call(this, translateLines(text));
-    };
-
     var originalSetChoices = Game_Message.prototype.setChoices;
     Game_Message.prototype.setChoices = function(choices, defaultType, cancelType) {
         return originalSetChoices.call(this, choices.map(translateLines), defaultType, cancelType);

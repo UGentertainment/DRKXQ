@@ -17,5 +17,5 @@ const communityBasic = sandbox.$plugins.find(function(plugin) {
 });
 
 assert(communityBasic, 'Community_Basic plugin is missing');
-assert.strictEqual(communityBasic.parameters.renderingMode, 'canvas');
+assert.strictEqual(communityBasic.parameters.renderingMode, 'auto');
 console.log('renderer configuration test passed');

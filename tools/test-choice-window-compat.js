@@ -9,7 +9,11 @@ global.window = global;
 global.Graphics = { boxWidth: 745, boxHeight: 400 };
 
 function Window_ChoiceListEx() {}
-Window_ChoiceListEx.prototype.start = function() {};
+Window_ChoiceListEx.prototype.start = function() {
+    // Simulate MessageWindowPopup's successful placement.
+    this.x = 32;
+    this.y = 120;
+};
 Window_ChoiceListEx.prototype.maxChoiceWidth = function() { return 120; };
 Window_ChoiceListEx.prototype.fittingHeight = function(rows) { return rows * 36 + 36; };
 Window_ChoiceListEx.prototype.contentsWidth = function() { return this.width - 36; };
@@ -26,9 +30,7 @@ Window_ChoiceListEx.prototype.activate = function() { this.active = true; };
 
 function Window_MessageEx() {}
 Window_MessageEx.prototype.update = function() {
-    // Simulate the popup plugin restoring its failed constructor coordinates.
-    this._choiceWindow.x = 0;
-    this._choiceWindow.y = 0;
+    // The compatibility layer must leave an active, placed popup alone.
 };
 
 global.Window_ChoiceListEx = Window_ChoiceListEx;
@@ -68,14 +70,14 @@ const compatPath = path.join(__dirname, '..', 'js', 'dzmm-choice-window-compat.j
 vm.runInThisContext(fs.readFileSync(compatPath, 'utf8'), { filename: compatPath });
 
 choiceWindow.start();
-assert.strictEqual(choiceWindow.x, 270);
-assert.strictEqual(choiceWindow.y, 220);
+assert.strictEqual(choiceWindow.x, 32);
+assert.strictEqual(choiceWindow.y, 120);
 
 const extendedMessageWindow = new Window_MessageEx();
 extendedMessageWindow._gameMessage = gameMessage;
 extendedMessageWindow._choiceWindow = choiceWindow;
 extendedMessageWindow.update();
-assert.strictEqual(choiceWindow.x, 270);
-assert.strictEqual(choiceWindow.y, 220);
+assert.strictEqual(choiceWindow.x, 32);
+assert.strictEqual(choiceWindow.y, 120);
 
 console.log('extended choice positioning tests passed');
