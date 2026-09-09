@@ -35,6 +35,19 @@ GLTexture.prototype.upload = function() {
 };
 
 global.PIXI = { glCore: { GLTexture } };
+let videoPlayCalls = 0;
+global.Graphics = {
+    _videoUnlocked: false,
+    _video: {
+        paused: true,
+        play() {
+            videoPlayCalls++;
+            return Promise.reject(new Error('autoplay blocked'));
+        }
+    },
+    _isVideoVisible() { return false; },
+    _onTouchEnd() {}
+};
 
 const compatPath = path.join(__dirname, '..', 'js', 'dzmm-browser-compat.js');
 vm.runInThisContext(fs.readFileSync(compatPath, 'utf8'), { filename: compatPath });
@@ -71,5 +84,9 @@ assert.deepStrictEqual(calls[0].slice(0, 9), [3553, 0, 6408, 320, 180, 0, 6408, 
 
 texture.upload(source);
 assert.strictEqual(calls.length, 1, 'blocked source should not be uploaded every frame');
+
+assert.doesNotThrow(() => Graphics._onTouchEnd());
+assert.strictEqual(Graphics._videoUnlocked, true);
+assert.strictEqual(videoPlayCalls, 1);
 
 console.log('browser compatibility tests passed');

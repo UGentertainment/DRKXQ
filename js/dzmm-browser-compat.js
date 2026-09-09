@@ -112,5 +112,38 @@
         GLTexture.prototype._drkxqTaintGuard = true;
     }
 
+    /*
+     * Chromium rejects video.play() until the page receives a valid media
+     * gesture. RPG Maker probes the hidden video element on the first touch;
+     * absorb that harmless rejection so it does not become an unhandled
+     * promise error in the browser console.
+     */
+    if (window.Graphics && Graphics._onTouchEnd) {
+        Graphics._onTouchEnd = function() {
+            function safePlay(video) {
+                if (!video) return;
+
+                var promise;
+                try {
+                    promise = video.play();
+                } catch (error) {
+                    return;
+                }
+
+                if (promise && typeof promise.catch === 'function') {
+                    promise.catch(function() {});
+                }
+            }
+
+            if (!this._videoUnlocked) {
+                safePlay(this._video);
+                this._videoUnlocked = true;
+            }
+            if (this._isVideoVisible() && this._video.paused) {
+                safePlay(this._video);
+            }
+        };
+    }
+
     window.DRKXQ_BROWSER_COMPAT = true;
 })();

@@ -5,6 +5,11 @@
     var dictionary = window.DRKXQ_TRANSLATIONS || Object.create(null);
     var owns = Object.prototype.hasOwnProperty;
     var supplementalTranslations = {
+        '\u306f\u3058\u3081\u304b\u3089': '\u5f00\u59cb\u6e38\u620f',
+        '\u3064\u3065\u304d\u304b\u3089': '\u7ee7\u7eed\u6e38\u620f',
+        '\u30aa\u30d7\u30b7\u30e7\u30f3': '\u9009\u9879',
+        '\u5e38\u6642\u30c0\u30c3\u30b7\u30e5': '\u59cb\u7ec8\u5954\u8dd1',
+        '\u30b3\u30de\u30f3\u30c9\u8a18\u61b6': '\u8bb0\u5fc6\u6307\u4ee4',
         '\\c[14]メンテナンス\\c[0]へ': '\\c[14]维护\\c[0]',
         '\\c[14]深夜のジカン\\c[0]へ': '前往\\c[14]深夜时段\\c[0]',
         '\\c[14]該当データの保存': '\\c[14]保存对应数据',
@@ -56,6 +61,12 @@
     Object.keys(visibleSupplement).forEach(function(source) {
         dictionary[source] = visibleSupplement[source];
     });
+
+    if (window.Scene_Boot && Scene_Boot.prototype.updateDocumentTitle) {
+        Scene_Boot.prototype.updateDocumentTitle = function() {
+            document.title = '\u51ac\u65e5\u72c2\u60f3\u66f2\uff08ver1.061d\uff09';
+        };
+    }
     var normalizedDictionary = Object.create(null);
     var phraseIndex = Object.create(null);
 
@@ -257,6 +268,14 @@
     Game_Message.prototype.setChoices = function(choices, defaultType, cancelType) {
         return originalSetChoices.call(this, choices.map(translateLines), defaultType, cancelType);
     };
+
+    if (window.Window_Command && Window_Command.prototype.addCommand) {
+        var originalAddCommand = Window_Command.prototype.addCommand;
+        Window_Command.prototype.addCommand = function(name) {
+            if (typeof name === 'string') arguments[0] = translateExact(name);
+            return originalAddCommand.apply(this, arguments);
+        };
+    }
 
     var originalDrawText = Bitmap.prototype.drawText;
     Bitmap.prototype.drawText = function(text) {

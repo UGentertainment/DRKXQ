@@ -10,6 +10,7 @@ PluginManager.setup($plugins);
     var patchScripts = [
         'dzmm-visible-translation-supplement.js',
         'dzmm-translation.js',
+        'dzmm-ui-localization.js',
         'dzmm-browser-compat.js',
         'dzmm-case-sensitive-assets.js',
         'dzmm-mobile-touch-compat.js',
@@ -22,7 +23,7 @@ PluginManager.setup($plugins);
     function loadPatchScript(name) {
         return new Promise(function(resolve, reject) {
             var script = document.createElement('script');
-            script.src = 'js/' + name + '?v=20260909-9';
+            script.src = 'js/' + name + '?v=20260909-11';
             script.onload = resolve;
             script.onerror = function() {
                 reject(new Error('Failed to load browser patch: ' + name));
