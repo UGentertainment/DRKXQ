@@ -45,7 +45,8 @@
 
     function isClimaxButtonActive() {
         return typeof $gameSwitches !== 'undefined' &&
-            !$gameSwitches.value(963) && currentMapHasClimaxEvent();
+            $gameSwitches.value(240) && !$gameSwitches.value(963) &&
+            currentMapHasClimaxEvent();
     }
 
     function createClimaxButtonBitmap(width, height) {

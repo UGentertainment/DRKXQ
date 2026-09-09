@@ -66,6 +66,12 @@
         Scene_Boot.prototype.updateDocumentTitle = function() {
             document.title = '\u51ac\u65e5\u72c2\u60f3\u66f2\uff08ver1.061d\uff09';
         };
+
+        // The bundled font is cosmetic and relatively large. Let the title
+        // scene render immediately with the fallback font while it downloads.
+        Scene_Boot.prototype.isGameFontLoaded = function() {
+            return true;
+        };
     }
     var normalizedDictionary = Object.create(null);
     var phraseIndex = Object.create(null);

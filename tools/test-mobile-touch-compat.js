@@ -18,7 +18,7 @@ global.$gameVariables = {
 };
 global.$gameMap = { mapId() { return 34; } };
 global.$gameSwitches = {
-    values: {},
+    values: { 240: true },
     value(id) { return !!this.values[id]; },
     setValue(id, value) { this.values[id] = value; }
 };
@@ -62,5 +62,10 @@ assert.strictEqual($gameTemp.cleared, true, 'button should clear map touch desti
 assert.strictEqual(SoundManager.played, true, 'button should play confirmation sound');
 scene.updateChildren();
 assert.strictEqual(scene._dzmmClimaxButton.visible, false, 'button should hide while action is running');
+
+$gameSwitches.values[963] = false;
+$gameSwitches.values[240] = false;
+scene.updateChildren();
+assert.strictEqual(scene._dzmmClimaxButton.visible, false, 'button must stay hidden outside a scene');
 
 console.log('mobile touch compatibility tests passed');

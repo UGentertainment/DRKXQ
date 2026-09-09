@@ -23,7 +23,7 @@ PluginManager.setup($plugins);
     function loadPatchScript(name) {
         return new Promise(function(resolve, reject) {
             var script = document.createElement('script');
-            script.src = 'js/' + name + '?v=20260909-11';
+            script.src = 'js/' + name + '?v=20260909-12';
             script.onload = resolve;
             script.onerror = function() {
                 reject(new Error('Failed to load browser patch: ' + name));
@@ -33,12 +33,19 @@ PluginManager.setup($plugins);
     }
 
     function startGame() {
-        patchScripts.reduce(function(chain, name) {
-            return chain.then(function() { return loadPatchScript(name); });
-        }, Promise.resolve()).then(function() {
+        var visibleTranslations = loadPatchScript(patchScripts[0]);
+        var translationRuntime = visibleTranslations.then(function() {
+            return loadPatchScript(patchScripts[1]);
+        });
+        var independentNames = patchScripts.slice(2);
+        var independentPatches = independentNames.map(loadPatchScript);
+        var saveAdapterIndex = independentNames.indexOf('dzmm-save-adapter.js');
+        var saveReady = independentPatches[saveAdapterIndex].then(function() {
             return window.XRKXQSaveAdapter ?
                 window.XRKXQSaveAdapter.initialize() : Promise.resolve();
-        }).then(function() {
+        });
+
+        Promise.all([translationRuntime, saveReady].concat(independentPatches)).then(function() {
             SceneManager.run(Scene_Boot);
         }).catch(function(error) {
             console.error(error);
@@ -46,5 +53,9 @@ PluginManager.setup($plugins);
         });
     }
 
-    window.addEventListener('load', startGame, { once: true });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startGame, { once: true });
+    } else {
+        startGame();
+    }
 })();

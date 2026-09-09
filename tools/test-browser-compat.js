@@ -6,6 +6,11 @@ const path = require('path');
 const vm = require('vm');
 
 global.window = global;
+const documentListeners = {};
+global.document = {
+    visibilityState: 'visible',
+    addEventListener(name, handler) { documentListeners[name] = handler; }
+};
 global.Input = { _pollGamepads() {} };
 global.Bitmap = function Bitmap() {};
 Bitmap.prototype.getPixel = function() { return '#000000'; };
@@ -35,6 +40,18 @@ GLTexture.prototype.upload = function() {
 };
 
 global.PIXI = { glCore: { GLTexture } };
+global.Decrypter = { hasEncryptedAudio: true };
+global.AudioManager = { audioFileExt() { return '.m4a'; } };
+let audioResumeCalls = 0;
+let audioUnlockCalls = 0;
+global.WebAudio = {
+    _unlocked: false,
+    _context: {
+        state: 'suspended',
+        resume() { audioResumeCalls++; return Promise.resolve(); }
+    },
+    _onTouchStart() { audioUnlockCalls++; this._unlocked = true; }
+};
 let videoPlayCalls = 0;
 global.Graphics = {
     _videoUnlocked: false,
@@ -88,5 +105,10 @@ assert.strictEqual(calls.length, 1, 'blocked source should not be uploaded every
 assert.doesNotThrow(() => Graphics._onTouchEnd());
 assert.strictEqual(Graphics._videoUnlocked, true);
 assert.strictEqual(videoPlayCalls, 1);
+
+assert.strictEqual(AudioManager.audioFileExt(), '.ogg', 'encrypted mobile audio must use shipped Ogg files');
+documentListeners.touchstart();
+assert.strictEqual(audioResumeCalls, 1);
+assert.strictEqual(audioUnlockCalls, 1);
 
 console.log('browser compatibility tests passed');

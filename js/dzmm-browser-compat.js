@@ -113,6 +113,47 @@
     }
 
     /*
+     * This build ships encrypted Ogg audio only. MV normally switches mobile
+     * browsers to M4A, which makes every request point at a nonexistent
+     * .rpgmvm file. Keep the shipped format on every platform.
+     */
+    if (window.AudioManager && AudioManager.audioFileExt) {
+        var originalAudioFileExt = AudioManager.audioFileExt;
+        AudioManager.audioFileExt = function() {
+            if (window.Decrypter && Decrypter.hasEncryptedAudio) return '.ogg';
+            return originalAudioFileExt.apply(this, arguments);
+        };
+    }
+
+    /* Resume Web Audio from the earliest real user gesture on mobile Safari
+     * and Chrome. Calling start on a silent source also covers older iOS. */
+    function unlockGameAudio() {
+        if (!window.WebAudio) return;
+        var context = WebAudio._context;
+        if (!context) return;
+
+        if (context.state === 'suspended' && typeof context.resume === 'function') {
+            try {
+                var resumed = context.resume();
+                if (resumed && typeof resumed.catch === 'function') {
+                    resumed.catch(function() {});
+                }
+            } catch (_) {}
+        }
+
+        if (!WebAudio._unlocked && typeof WebAudio._onTouchStart === 'function') {
+            try { WebAudio._onTouchStart(); } catch (_) {}
+        }
+    }
+
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(function(name) {
+        document.addEventListener(name, unlockGameAudio, { capture: true, passive: true });
+    });
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') unlockGameAudio();
+    });
+
+    /*
      * Chromium rejects video.play() until the page receives a valid media
      * gesture. RPG Maker probes the hidden video element on the first touch;
      * absorb that harmless rejection so it does not become an unhandled

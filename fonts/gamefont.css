@@ -1,6 +1,7 @@
 @font-face {
     font-family: GameFont;
     src: url("JF-Dot-Ayu20.ttf");
+    font-display: swap;
 }
 
 .IIV::-webkit-media-controls-play-button,
