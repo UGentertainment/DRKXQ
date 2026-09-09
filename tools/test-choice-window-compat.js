@@ -51,7 +51,13 @@ const messageWindow = {
     width: 500,
     height: 100,
     visible: true,
-    openness: 255
+    openness: 0,
+    _opening: true,
+    isPopup() { return true; },
+    isOpen() { return this.openness >= 255; },
+    isOpening() { return this._opening; },
+    updateTargetCharacterId() { this.targetUpdated = true; },
+    updatePlacementPopup() { this.popupPlacementUpdated = true; }
 };
 const choiceWindow = new Window_ChoiceListEx();
 Object.assign(choiceWindow, {
@@ -69,13 +75,22 @@ Object.assign(choiceWindow, {
     active: true,
     _index: 0
 });
+choiceWindow.updatePlacementPopup = function() {
+    this.x = 210;
+    this.y = 95;
+    this.popupPlacementUpdated = true;
+};
 
 const compatPath = path.join(__dirname, '..', 'js', 'dzmm-choice-window-compat.js');
 vm.runInThisContext(fs.readFileSync(compatPath, 'utf8'), { filename: compatPath });
 
 choiceWindow.start();
-assert.strictEqual(choiceWindow.x, 32);
-assert.strictEqual(choiceWindow.y, 120);
+assert.strictEqual(choiceWindow.isPopup(), true, 'opening parent must count as popup');
+assert.strictEqual(messageWindow.targetUpdated, true);
+assert.strictEqual(messageWindow.popupPlacementUpdated, true);
+assert.strictEqual(choiceWindow.popupPlacementUpdated, true);
+assert.strictEqual(choiceWindow.x, 210);
+assert.strictEqual(choiceWindow.y, 95);
 
 const extendedMessageWindow = new Window_MessageEx();
 extendedMessageWindow._windowId = 1;
@@ -83,8 +98,8 @@ extendedMessageWindow._targetCharacterId = 6;
 extendedMessageWindow._gameMessage = gameMessage;
 extendedMessageWindow._choiceWindow = choiceWindow;
 extendedMessageWindow.update();
-assert.strictEqual(choiceWindow.x, 32);
-assert.strictEqual(choiceWindow.y, 120);
+assert.strictEqual(choiceWindow.x, 210);
+assert.strictEqual(choiceWindow.y, 95);
 assert.strictEqual(extendedMessageWindow.getPopupTargetCharacter(), global.$gamePlayer);
 assert.strictEqual(global.__DRKXQ_POPUP_FALLBACK__.requestedCharacterId, 6);
 

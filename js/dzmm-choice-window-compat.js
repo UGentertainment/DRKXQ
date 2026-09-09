@@ -38,6 +38,22 @@
 
     var originalChoiceStart = Window_ChoiceListEx.prototype.start;
 
+    // MessageWindowPopup asks whether the parent window is *fully* open.  A
+    // short prompt can finish and start its choices in the same frame in which
+    // Window_MessageEx calls open(); openness is still 0 during that frame, so
+    // the original test incorrectly treats the choice as a normal window and
+    // places it at (0, 0).  The opening state already has a valid popup target
+    // and must be treated as part of the same popup unit.
+    Window_ChoiceListEx.prototype.isPopup = function() {
+        var messageWindow = this._messageWindow;
+        if (!messageWindow || !messageWindow.isPopup || !messageWindow.isPopup()) {
+            return false;
+        }
+        return messageWindow.isOpen() ||
+            (messageWindow.isOpening && messageWindow.isOpening()) ||
+            messageWindow.openness > 0;
+    };
+
     function report(stage, error, choiceWindow) {
         window.__DZMM_CHOICE_DIAGNOSTICS__ = {
             stage: stage,
@@ -71,6 +87,21 @@
         }
         if (invalidHeight) {
             choiceWindow.height = choiceWindow.fittingHeight(rows);
+        }
+
+        // Re-evaluate popup placement after the parent begins opening.  The
+        // stock plugin only does this once and can permanently retain (0, 0).
+        var messageWindow = choiceWindow._messageWindow;
+        if (messageWindow && messageWindow.updateTargetCharacterId) {
+            messageWindow.updateTargetCharacterId();
+        }
+        var popupOpening = messageWindow && messageWindow.isPopup &&
+            messageWindow.isPopup() &&
+            (messageWindow.isOpen() ||
+             (messageWindow.isOpening && messageWindow.isOpening()) ||
+             messageWindow.openness > 0);
+        if (popupOpening && messageWindow.updatePlacementPopup) {
+            messageWindow.updatePlacementPopup();
         }
 
         // Popup linkage may place an extended sub-window outside a small iframe.
@@ -114,6 +145,9 @@
             report('start', e, this);
         }
         recoverChoiceWindow(this);
+        if (this.isPopup() && this.updatePlacementPopup) {
+            this.updatePlacementPopup();
+        }
     };
 
     // Some embedded browsers briefly report the popup target as unavailable.

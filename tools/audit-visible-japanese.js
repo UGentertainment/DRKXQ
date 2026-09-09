@@ -15,7 +15,14 @@ Object.assign(dictionary, {
     'が釣れた！やったね！': '钓到了！太好了！',
     '解散しようかな？': '要解散吗？',
     '帰ろうかな？': '要回去吗？',
-    'どうしよう…？': '该怎么办呢……？'
+    'どうしよう…？': '该怎么办呢……？',
+    '\\C[14](どうしよう…？)': '\\C[14]（该怎么办呢……？）',
+    '\\c[14]（最新ドローンが\n　飛んでる！）': '\\c[14]（最新型无人机\n　正在飞！）',
+    '\\c[14]（僕もちょっと\n　やってみたいな…）': '\\c[14]（我也有点\n　想试试看……）',
+    'この画面では１日の終わりの処理を行うことができ、\n主に\\c[14]スキルの習得\\c[0]や\\c[14]絵日記を描く\\c[0]等ができます。': '在这个画面可以处理一天结束时的事务，\n主要能\\c[14]学习技能\\c[0]、\\c[14]绘制日记\\c[0]等。',
+    'ゲーム本編中、イベントをこなしたり\nエッチをすることで左下の\\c[14]「思い出ゲージ」\\c[0]が\n徐々に溜まっていきます。': '游戏过程中，完成事件或亲密互动后，\n左下角的\\c[14]“回忆槽”\\c[0]会逐渐累积。',
+    '\\c[14]その日に起こした行動が絵日記のフラグ\\c[0]となっており、\n起こしていないイベントは描写することはできません。\\!\n沢山のイベントを探してみましょう！': '\\c[14]当天做过的行动会成为绘制日记的条件\\c[0]，\n没有触发过的事件无法画进日记。\\!\n请尽量寻找更多事件吧！',
+    '以上でチュートリアルは終了です。\\!\nそれでは良いあまえんぼライフを(⌒▽⌒)丿': '教程到这里就结束了。\\!\n祝你享受愉快的撒娇生活！(⌒▽⌒)丿'
 });
 const owns = Object.prototype.hasOwnProperty;
 const remaining = new Map();
@@ -40,7 +47,7 @@ Object.keys(dictionary).forEach(source => {
     const target = dictionary[source];
     if (typeof target !== 'string' || source === target || source.includes('\\') ||
             target.includes('\\') || source.includes('\n') || target.includes('\n') ||
-            !hasJapanese(source) || hasJapanese(target) || source.length < 2) return;
+            !hasJapanese(source) || hasJapanese(target) || source.length < 3) return;
     const first = source.charAt(0);
     (phraseIndex[first] || (phraseIndex[first] = [])).push({ source, target });
 });
@@ -51,11 +58,15 @@ function hasJapanese(value) {
 }
 
 function translateExact(value) {
-    if (owns.call(dictionary, value) && typeof dictionary[value] === 'string') return dictionary[value];
+    if (owns.call(dictionary, value) && typeof dictionary[value] === 'string') {
+        const translated = dictionary[value];
+        return hasJapanese(translated) ? translateByKnownPhrases(translated) : translated;
+    }
     if (!/\\/.test(value)) {
         const normalized = normalizeLookupKey(value);
         if (normalized.length >= 3 && typeof normalizedDictionary[normalized] === 'string') {
-            return normalizedDictionary[normalized];
+            const translated = normalizedDictionary[normalized];
+            return hasJapanese(translated) ? translateByKnownPhrases(translated) : translated;
         }
     }
     return value;
