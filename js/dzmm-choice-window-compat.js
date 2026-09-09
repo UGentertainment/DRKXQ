@@ -29,7 +29,7 @@
         }
     }
 
-    function recoverChoiceWindow(choiceWindow) {
+    function recoverChoiceWindow(choiceWindow, redraw) {
         var gameMessage = choiceWindow._gameMessage;
         var choices = gameMessage && gameMessage.choices();
         if (!choices || !choices.length) return false;
@@ -51,6 +51,35 @@
             choiceWindow.height = choiceWindow.fittingHeight(rows);
         }
 
+        /*
+         * MessageWindowPopup can leave an otherwise valid extended choice
+         * window at its constructor coordinates (0, 0) when the popup target
+         * disappears between message and input setup. Anchor that specific
+         * failure to the visible message window instead of treating it as a
+         * legitimate left-aligned choice position.
+         */
+        var messageWindow = choiceWindow._messageWindow;
+        var cornerFallback = Number(choiceWindow.x) <= 1 && Number(choiceWindow.y) <= 1;
+        if (cornerFallback && messageWindow && messageWindow.visible &&
+                messageWindow.openness > 0) {
+            var centeredX = messageWindow.x +
+                (messageWindow.width - choiceWindow.width) / 2;
+            var aboveY = messageWindow.y - choiceWindow.height;
+            var belowY = messageWindow.y + messageWindow.height;
+            var preferAbove = messageWindow.y + messageWindow.height / 2 >=
+                Graphics.boxHeight / 2;
+
+            choiceWindow.x = centeredX;
+            if (preferAbove && aboveY >= 0) {
+                choiceWindow.y = aboveY;
+            } else if (!preferAbove && belowY + choiceWindow.height <= Graphics.boxHeight) {
+                choiceWindow.y = belowY;
+            } else {
+                choiceWindow.y = Math.max(0, Math.min(aboveY,
+                    Graphics.boxHeight - choiceWindow.height));
+            }
+        }
+
         // Popup linkage may place an extended sub-window outside a small iframe.
         choiceWindow.x = Number(choiceWindow.x);
         choiceWindow.y = Number(choiceWindow.y);
@@ -62,12 +91,12 @@
             Math.max(0, Graphics.boxHeight - choiceWindow.height)));
 
         try {
-            if (!choiceWindow.contents ||
+            if (redraw || !choiceWindow.contents ||
                     choiceWindow.contents.width !== choiceWindow.contentsWidth() ||
                     choiceWindow.contents.height !== choiceWindow.contentsHeight()) {
                 choiceWindow.createContents();
+                choiceWindow.refresh();
             }
-            choiceWindow.refresh();
         } catch (e) {
             // Geometry and input are still recovered even if a custom skin cannot draw.
             report('refresh', e, choiceWindow);
@@ -78,10 +107,10 @@
             choiceWindow.select(defaultIndex >= 0 && defaultIndex < choices.length ?
                 defaultIndex : 0);
         }
-        choiceWindow.visible = true;
-        choiceWindow.contentsOpacity = 255;
-        choiceWindow.open();
-        choiceWindow.activate();
+        if (!choiceWindow.visible) choiceWindow.visible = true;
+        if (choiceWindow.contentsOpacity !== 255) choiceWindow.contentsOpacity = 255;
+        if (choiceWindow.openness <= 0 || choiceWindow.isClosed()) choiceWindow.open();
+        if (!choiceWindow.active) choiceWindow.activate();
         return true;
     }
 
@@ -91,7 +120,7 @@
         } catch (e) {
             report('start', e, this);
         }
-        recoverChoiceWindow(this);
+        recoverChoiceWindow(this, true);
     };
 
     // Some embedded browsers briefly report the popup target as unavailable.
@@ -99,10 +128,8 @@
     var originalMessageUpdate = Window_MessageEx.prototype.update;
     Window_MessageEx.prototype.update = function() {
         originalMessageUpdate.apply(this, arguments);
-        if (this._gameMessage && this._gameMessage.isChoice() && this._choiceWindow &&
-                (!this._choiceWindow.active || !this._choiceWindow.visible ||
-                 this._choiceWindow.openness <= 0)) {
-            recoverChoiceWindow(this._choiceWindow);
+        if (this._gameMessage && this._gameMessage.isChoice() && this._choiceWindow) {
+            recoverChoiceWindow(this._choiceWindow, false);
         }
     };
 })();
